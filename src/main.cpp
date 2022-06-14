@@ -17,10 +17,8 @@ DS1307 rtc;
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
 
-// Encoder /////////////////////////////////////
 #define encA 12
 #define encB 4
-// this encoder has a button here
 #define encBtn 2
 
 
@@ -37,7 +35,6 @@ keyMap encBtn_map[] = {{-encBtn, defaultNavCodes[enterCmd].ch}}; // negative pin
 keyIn<1> encButton(encBtn_map);                                  // 1 is the number of keys
 
 // serialIn serial(Serial);
-
 // input from the encoder + encoder button
 menuIn *inputsList[] = {&encStream, &encButton};
 chainStream<2> in(inputsList); // 3 is the number of inputs
@@ -69,22 +66,17 @@ struct AquaConfig
 
   uint16_t waveMakerOnTime[2];
   uint16_t waveMakerOffTime[2];
-  
 };
-
- 
 
 AquaConfig aqua_config;
 
-result showEvent(eventMask e, navNode &nav, prompt &item)
-{
+result showEvent(eventMask e, navNode &nav, prompt &item) {
   // Serial.print("show event: ");
   // Serial.println(e);
   return proceed;
 }
 
-result saveConfig(eventMask e, navNode &nav, prompt &item)
-{
+result saveConfig(eventMask e, navNode &nav, prompt &item) {
   if(e == 4) {
     // save config to eeprom
     EEPROM.put(eeAddress, aqua_config);
@@ -92,26 +84,6 @@ result saveConfig(eventMask e, navNode &nav, prompt &item)
   // Serial.flush();
   return proceed;
 }
-
-TOGGLE(aqua_config.led, setLed, "Led: ", saveConfig, anyEvent, noStyle //,doExit,enterEvent,noStyle
-       ,
-       VALUE("On", HIGH, doNothing, noEvent),
-       VALUE("Off", LOW, doNothing, noEvent));
-
-TOGGLE(aqua_config.feeder, setFeeder, "Feeder: ", saveConfig, anyEvent, noStyle //,doExit,enterEvent,noStyle
-       ,
-       VALUE("On", HIGH, doNothing, noEvent),
-       VALUE("Off", LOW, doNothing, noEvent));
-
-TOGGLE(aqua_config.filter, setFilter,  "Filter: ", saveConfig, anyEvent, noStyle //,doExit,enterEvent,noStyle
-       ,
-       VALUE("On", HIGH, doNothing, noEvent),
-       VALUE("Off", LOW, doNothing, noEvent));
-      
-TOGGLE(aqua_config.wavemaker, setWaveMaker, "WaveMaker: ", saveConfig, anyEvent, noStyle //,doExit,enterEvent,noStyle
-       ,
-       VALUE("On", HIGH, doNothing, noEvent),
-       VALUE("Off", LOW, doNothing, noEvent));
 
 PADMENU(ledOnTimeField, "On ", saveConfig, anyEvent, noStyle,
         FIELD(aqua_config.ledOnTime[0], "", "h", 0, 23, 1, 0, doNothing, anyEvent, noStyle),
@@ -167,24 +139,17 @@ MENU(mainMenu, "Main menu", doNothing, noEvent, wrapStyle,
      SUBMENU(feederMenu),
      SUBMENU(filterMenu),
      SUBMENU(waveMakerMenu),
-     SUBMENU(setLed),
-     SUBMENU(setFeeder),
-     SUBMENU(setFilter),
-     SUBMENU(setWaveMaker),
      EXIT("<Back"));
 
 
 MENU_OUTPUTS(
     out,
     MAX_DEPTH,
-    LIQUIDCRYSTAL_OUT(lcd, {0, 0, 16, 2}),
-    NONE);
-NAVROOT(nav, mainMenu, MAX_DEPTH, in, out); // the navigation root object
+    LIQUIDCRYSTAL_OUT(lcd, {0, 0, 16, 2}),NONE);
+    NAVROOT(nav, mainMenu, MAX_DEPTH, in, out); // the navigation root object
 
-result alert(menuOut &o, idleEvent e)
-{
-  if (e == idling)
-  {
+result alert(menuOut &o, idleEvent e){
+  if (e == idling){
     o.setCursor(0, 0);
     o.print("alert test");
     o.setCursor(0, 1);
@@ -193,10 +158,8 @@ result alert(menuOut &o, idleEvent e)
   return proceed;
 }
 
-result idle(menuOut &o, idleEvent e)
-{
-  switch (e)
-  {
+result idle(menuOut &o, idleEvent e){
+  switch (e){
   case idleStart:
     o.print("suspending menu!");
     nav.idleOn();
@@ -221,14 +184,12 @@ void setup()
   pinMode(filterPIN, OUTPUT);
   pinMode(waveMakerPIN, OUTPUT);
 
- // = {LOW, LOW, LOW, LOW, {8, 0}, {20, 0}, {9,0}, 3 , {10,0} , {12,0} , {8,0} , {20,0} }
   EEPROM.get(eeAddress, aqua_config);
-
   // It this is first time run then put default values
-  if (aqua_config.feederDuration == 0)
-  {
-    aqua_config = {LOW, LOW, LOW, LOW, {8, 0}, {20, 0}, {9,0,0}, {0,0,3} , {10,0} , {12,0} , {8,0} , {20,0}};
-    EEPROM.put(eeAddress, aqua_config);
+
+  if (aqua_config.feederDuration == 0) {
+      aqua_config = {LOW, LOW, LOW, LOW, {8, 0}, {20, 0}, {9,0,0}, {0,0,3} , {10,0} , {12,0} , {8,0} , {20,0}};
+      EEPROM.put(eeAddress, aqua_config);
   }
 
   Serial.begin(115200);
@@ -238,7 +199,6 @@ void setup()
   rtc.begin();
   //rtc.set(0, 45, 13, 2, 6, 2022);  //08:00:00 24.12.2014 //sec, min, hour, day, month, year
   rtc.start();
-
   Serial.println(F("Aquarium Controller"));
   Serial.flush();
   encoder.begin();
@@ -249,9 +209,9 @@ void setup()
   nav.showTitle = false;
   nav.timeOut = 30;
   lcd.setCursor(0, 0);
-  lcd.print("Aquarium Ctrl.");
+  lcd.print(F("Aquarium Ctrl."));
   lcd.setCursor(0, 1);
-  lcd.print("V1.0.0");
+  lcd.print(F("V1.0.0"));
 
   //Serial.println(F(aqua_config.feederDuration));
   // delay(1000);
@@ -279,7 +239,6 @@ void getTime() {
 }
 
 void LEDHandler() {
-
   getTime();
   int currentMinutes = hour * 60 + min;
   int savedStartMinutes = aqua_config.ledOnTime[0] * 60 + aqua_config.ledOnTime[1];
@@ -287,19 +246,16 @@ void LEDHandler() {
 
   bool LEDcondition = savedStartMinutes <= currentMinutes && currentMinutes < savedEndMinutes;
 
-  if (LEDcondition && digitalRead(LEDPIN) == LOW)
-  {
+    if (LEDcondition && digitalRead(LEDPIN) == LOW){
     digitalWrite(LEDPIN, HIGH);
   }
 
-  if (!LEDcondition && digitalRead(LEDPIN) == HIGH)
-  {
+    if (!LEDcondition && digitalRead(LEDPIN) == HIGH){
     digitalWrite(LEDPIN, LOW);
   }
 }
 
 void feederHandler() {
-
   getTime();
   int currentMinutes = hour * 60  + min * 60 + sec;
   int savedStartMinutes = aqua_config.feederOnTime[0] * 60 + aqua_config.feederOnTime[1] * 60 + aqua_config.feederOnTime[2];
@@ -307,19 +263,16 @@ void feederHandler() {
 
   bool feedercondition = savedStartMinutes <= currentMinutes && currentMinutes < savedEndMinutes;
 
-   if (feedercondition && digitalRead(feederPIN) == LOW)
-  {
-    digitalWrite(feederPIN, HIGH);
+    if (feedercondition && digitalRead(feederPIN) == LOW){
+    digitalWrite(feederPIN, HIGH); 
   }
 
-  if (!feedercondition && digitalRead(feederPIN) == HIGH)
-  {
+    if (!feedercondition && digitalRead(feederPIN) == HIGH){
     digitalWrite(feederPIN, LOW);
   }
 }
 
 void feederCcwHandler(){
-
   getTime();
   int currentMinutes = hour * 60 + min * 60 + sec;
   int savedStartMinutes = aqua_config.feederOnTime[0] * 60 + aqua_config.feederOnTime[1] * 60 + aqua_config.feederDuration[2];
@@ -327,19 +280,16 @@ void feederCcwHandler(){
 
   bool feederCcwcondition = savedStartMinutes <= currentMinutes && currentMinutes < savedEndMinutes;
 
-     if (feederCcwcondition && digitalRead(feederCcwPIN) == LOW)
-  {
+    if (feederCcwcondition && digitalRead(feederCcwPIN) == LOW){
     digitalWrite(feederCcwPIN, HIGH);
   }
 
-  if (!feederCcwcondition && digitalRead(feederCcwPIN) == HIGH)
-  {
+    if (!feederCcwcondition && digitalRead(feederCcwPIN) == HIGH){
     digitalWrite(feederCcwPIN, LOW);
   }
 }
 
 void filterHandler() {
-
   getTime();
   int currentMinutes = hour * 60 + min;
   int savedStartMinutes = aqua_config.filterOnTime[0] * 60 + aqua_config.filterOnTime[1];
@@ -347,19 +297,15 @@ void filterHandler() {
 
   bool filtercondition = savedStartMinutes <= currentMinutes &&  currentMinutes < savedEndMinutes;
 
-    if (filtercondition && digitalRead(filterPIN) == LOW)
-  {
+    if (filtercondition && digitalRead(filterPIN) == LOW){
     digitalWrite(filterPIN, HIGH);
   }
-
-  if (!filtercondition && digitalRead(filterPIN) == HIGH)
-  {
+    if (!filtercondition && digitalRead(filterPIN) == HIGH){
     digitalWrite(filterPIN, LOW);
   }
 }
 
 void waveMakerHandler() {
-
   getTime();
   int currentMinutes = hour * 60 + min;
   int savedStartMinutes = aqua_config.waveMakerOnTime[0] * 60 + aqua_config.waveMakerOnTime[1];
@@ -367,13 +313,10 @@ void waveMakerHandler() {
 
   bool wavemakercondition = savedStartMinutes <= currentMinutes && currentMinutes < savedEndMinutes;
 
-  if (wavemakercondition && digitalRead(waveMakerPIN) == LOW)
-  {
+    if (wavemakercondition && digitalRead(waveMakerPIN) == LOW){
     digitalWrite(waveMakerPIN, HIGH);
   }
-
-  if (!wavemakercondition && digitalRead(waveMakerPIN) == HIGH)
-  {
+    if (!wavemakercondition && digitalRead(waveMakerPIN) == HIGH){
     digitalWrite(waveMakerPIN, LOW);
   }
 }
@@ -389,59 +332,47 @@ void homeScreenHandler() {
   lcd.setCursor(12, 0);
   lcd.print("WMK");
   
-  if (digitalRead(9) == HIGH)
-  { 
+    if (digitalRead(9) == HIGH){ 
     lcd.setCursor(0,1);
     lcd.print("ON");
   }
-   else
-  {
+    else{
     lcd.setCursor(0,1);
     lcd.print("Off");
   }
 
-  if (digitalRead(10) == HIGH)
-  { 
+    if (digitalRead(10) == HIGH){ 
     lcd.setCursor(4,1);
     lcd.print("ON");
   }
-   else
-  {
+    else{
     lcd.setCursor(4,1);
     lcd.print("Off");
   }
-    if (digitalRead(11) == HIGH)
-  { 
+    if (digitalRead(11) == HIGH){ 
     lcd.setCursor(4,1);
     lcd.print("ON");
   }
-   else
-  {
+    else{
     lcd.setCursor(4,1);
     lcd.print("Off");
-  }
-    if (digitalRead(7) == HIGH)
-  { 
+    }
+    if (digitalRead(7) == HIGH){ 
     lcd.setCursor(8,1);
     lcd.print("ON");
   }
-   else
-  {
+    else{
     lcd.setCursor(8,1);
     lcd.print("Off");
   }
-
-  if (digitalRead(8) == HIGH)
-  { 
+    if (digitalRead(8) == HIGH){ 
     lcd.setCursor(12,1);
     lcd.print("ON");
   }
-   else
-  {
+    else{
     lcd.setCursor(12,1);
     lcd.print("Off");
   }
-  
 }
 
 noDelay homeScreenTask(2000, homeScreenHandler);
@@ -450,21 +381,15 @@ noDelay feederTask(1000, feederHandler);
 noDelay feederCcwTask(1000, feederCcwHandler);
 noDelay filterTask(1000, filterHandler);
 noDelay waveMakerTask(1000, waveMakerHandler);
-void loop()
-{
+
+void loop() {
   nav.poll();
   LEDTask.update();
   feederTask.update();
   feederCcwTask.update();
   filterTask.update();
   waveMakerTask.update();
-  // digitalWrite(LEDPIN, aqua_config.led);
-  // digitalWrite(feederPIN, aqua_config.feeder);
-  // digitalWrite(filterPIN, aqua_config.filter);
-  // digitalWrite(waveMakerPIN, aqua_config.wavemaker);
-
-  if (nav.sleepTask)
-  {
+  if (nav.sleepTask) {
     homeScreenTask.update();
   }
 }
