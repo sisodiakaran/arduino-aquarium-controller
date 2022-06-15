@@ -58,8 +58,8 @@ struct AquaConfig
   uint16_t ledOnTime[2];
   uint16_t ledOffTime[2];
 
-  uint16_t feederOnTime[3];
-  uint16_t feederDuration[3];
+  uint16_t feederOnTime[2];
+  uint16_t feederDuration;
 
   uint16_t filterOnTime[2];
   uint16_t filterOffTime[2];
@@ -95,8 +95,8 @@ PADMENU(ledOffTimeField, "Off", saveConfig, anyEvent, noStyle,
 
 PADMENU(feederOnField, "On ", saveConfig, anyEvent, noStyle,
         FIELD(aqua_config.feederOnTime[0], "", "h", 0, 23, 1, 0, doNothing, anyEvent, noStyle),
-        FIELD(aqua_config.feederOnTime[1], "", "m", 0, 59, 5, 1, doNothing, anyEvent, noStyle),
-        FIELD(aqua_config.feederOnTime[2], "", "sec", 0, 0, 0, 0, doNothing, anyEvent, noStyle));
+        FIELD(aqua_config.feederOnTime[1], "", "m", 0, 59, 5, 1, doNothing, anyEvent, noStyle)
+      );
 
 PADMENU(filterOnTimeField, "On ", saveConfig, anyEvent, noStyle,
         FIELD(aqua_config.filterOnTime[0], "", "h", 0, 23, 1, 0, doNothing, anyEvent, noStyle),
@@ -121,7 +121,7 @@ MENU(ledMenu, "LED", showEvent, anyEvent, noStyle,
 
 MENU(feederMenu, "Feeder", showEvent, anyEvent, noStyle,
      SUBMENU(feederOnField),
-     FIELD(aqua_config.feederDuration[2], "Duration", "sec", 1, 60, 1, 0, saveConfig, anyEvent, wrapStyle),
+     FIELD(aqua_config.feederDuration, "Duration", "sec", 1, 60, 1, 0, saveConfig, anyEvent, wrapStyle),
      EXIT("<Back"));
 
 MENU(filterMenu, "Filter", showEvent, anyEvent, noStyle,
@@ -160,17 +160,17 @@ result alert(menuOut &o, idleEvent e){
 
 result idle(menuOut &o, idleEvent e){
   switch (e){
-  case idleStart:
-    o.print("suspending menu!");
-    nav.idleOn();
-    break;
-  case idling:
-    o.print("suspended...");
-    o.clear();
-    break;
-  case idleEnd:
-    o.print("resuming menu.");
-    break;
+    case idleStart:
+      o.print("suspending menu!");
+      nav.idleOn();
+      break;
+    case idling:
+      o.print("suspended...");
+      o.clear();
+      break;
+    case idleEnd:
+      o.print("resuming menu.");
+      break;
   }
   return proceed;
 }
@@ -188,7 +188,7 @@ void setup()
   // It this is first time run then put default values
 
   if (aqua_config.feederDuration == 0) {
-      aqua_config = {LOW, LOW, LOW, LOW, {8, 0}, {20, 0}, {9,0,0}, {0,0,3} , {10,0} , {12,0} , {8,0} , {20,0}};
+      aqua_config = {LOW, LOW, LOW, LOW, {8, 0}, {20, 0}, {9,0}, 3 , {10,0} , {12,0} , {8,0} , {20,0}};
       EEPROM.put(eeAddress, aqua_config);
   }
 
@@ -222,61 +222,57 @@ void setup()
 void getTime() {
   //get time from RTC
   rtc.get(&sec, &min, &hour, &day, &month, &year);
-  //serial output
-  Serial.print(F("\nTime: "));
-  Serial.print(hour);
-  Serial.print(F(": "));
-  Serial.print(min, DEC);
-  Serial.print(F(":"));
-  Serial.print(sec, DEC);
+ // serial output
+  // Serial.print(F("\nTime: "));
+  // Serial.print(hour);
+  // Serial.print(F(": "));
+  // Serial.print(min, DEC);
+  // Serial.print(F(":"));
+  // Serial.print(sec, DEC);
 
-  Serial.print(F("\nDate: "));
-  Serial.print(day, DEC);
-  Serial.print(F("."));
-  Serial.print(month, DEC);
-  Serial.print(F("."));
-  Serial.print(year, DEC);
+  // Serial.print(F("\nDate: "));
+  // Serial.print(day, DEC);
+  // Serial.print(F("."));
+  // Serial.print(month, DEC);
+  // Serial.print(F("."));
+  // Serial.print(year, DEC);
 }
 
-void LEDHandler() {
-  getTime();
+void LEDHandler() {;
   int currentMinutes = hour * 60 + min;
   int savedStartMinutes = aqua_config.ledOnTime[0] * 60 + aqua_config.ledOnTime[1];
   int savedEndMinutes = aqua_config.ledOffTime[0] * 60 + aqua_config.ledOffTime[1];
 
   bool LEDcondition = savedStartMinutes <= currentMinutes && currentMinutes < savedEndMinutes;
 
-    if (LEDcondition && digitalRead(LEDPIN) == LOW){
+  if (LEDcondition && digitalRead(LEDPIN) == LOW){
     digitalWrite(LEDPIN, HIGH);
   }
 
-    if (!LEDcondition && digitalRead(LEDPIN) == HIGH){
+  if (!LEDcondition && digitalRead(LEDPIN) == HIGH){
     digitalWrite(LEDPIN, LOW);
   }
 }
 
 void feederHandler() {
-  getTime();
-  int currentMinutes = hour * 60  + min * 60 + sec;
-  int savedStartMinutes = aqua_config.feederOnTime[0] * 60 + aqua_config.feederOnTime[1] * 60 + aqua_config.feederOnTime[2];
-  int savedEndMinutes = aqua_config.feederOnTime[0] * 60 + aqua_config.feederOnTime[1] * 60 + aqua_config.feederDuration[2];
-
+  int currentMinutes = (hour * 60)  + (min * 60) + sec ;
+  int savedStartMinutes = (aqua_config.feederOnTime[0] * 60) + (aqua_config.feederOnTime[1] * 60) ;
+  int savedEndMinutes = aqua_config.feederOnTime[0] * 60 + (aqua_config.feederOnTime[1] * 60) + aqua_config.feederDuration  ;
   bool feedercondition = savedStartMinutes <= currentMinutes && currentMinutes < savedEndMinutes;
-
-    if (feedercondition && digitalRead(feederPIN) == LOW){
+  
+  if (feedercondition && digitalRead(feederPIN) == LOW){
     digitalWrite(feederPIN, HIGH); 
   }
 
-    if (!feedercondition && digitalRead(feederPIN) == HIGH){
+  if (!feedercondition && digitalRead(feederPIN) == HIGH){
     digitalWrite(feederPIN, LOW);
   }
 }
 
 void feederCcwHandler(){
-  getTime();
-  int currentMinutes = hour * 60 + min * 60 + sec;
-  int savedStartMinutes = aqua_config.feederOnTime[0] * 60 + aqua_config.feederOnTime[1] * 60 + aqua_config.feederDuration[2];
-  int savedEndMinutes = aqua_config.feederOnTime[0] * 60 + aqua_config.feederOnTime[1] * 60 + aqua_config.feederDuration[2] + feeder_acw_on_sec ;
+  int currentMinutes = hour * 60 + min * 60 + sec  ;
+  int savedStartMinutes = aqua_config.feederOnTime[0] * 60 + (aqua_config.feederOnTime[1] * 60) + aqua_config.feederDuration   ;
+  int savedEndMinutes = aqua_config.feederOnTime[0] * 60 + (aqua_config.feederOnTime[1] * 60) + aqua_config.feederDuration + feeder_acw_on_sec   ;
 
   bool feederCcwcondition = savedStartMinutes <= currentMinutes && currentMinutes < savedEndMinutes;
 
@@ -290,7 +286,6 @@ void feederCcwHandler(){
 }
 
 void filterHandler() {
-  getTime();
   int currentMinutes = hour * 60 + min;
   int savedStartMinutes = aqua_config.filterOnTime[0] * 60 + aqua_config.filterOnTime[1];
   int savedEndMinutes = aqua_config.filterOffTime[0] * 60 + aqua_config.filterOffTime[1];
@@ -306,7 +301,6 @@ void filterHandler() {
 }
 
 void waveMakerHandler() {
-  getTime();
   int currentMinutes = hour * 60 + min;
   int savedStartMinutes = aqua_config.waveMakerOnTime[0] * 60 + aqua_config.waveMakerOnTime[1];
   int savedEndMinutes = aqua_config.waveMakerOffTime[0] * 60 + aqua_config.waveMakerOffTime[1];
@@ -332,50 +326,43 @@ void homeScreenHandler() {
   lcd.setCursor(12, 0);
   lcd.print("WMK");
   
-    if (digitalRead(9) == HIGH){ 
-    lcd.setCursor(0,1);
+  lcd.setCursor(0,1);
+  if (digitalRead(9) == HIGH){ 
     lcd.print("ON");
-  }
-    else{
-    lcd.setCursor(0,1);
+  }else{
     lcd.print("Off");
   }
 
-    if (digitalRead(10) == HIGH){ 
-    lcd.setCursor(4,1);
+  lcd.setCursor(4,1);
+  if (digitalRead(10) == HIGH){ 
     lcd.print("ON");
-  }
-    else{
-    lcd.setCursor(4,1);
+  } else {
     lcd.print("Off");
   }
-    if (digitalRead(11) == HIGH){ 
-    lcd.setCursor(4,1);
+
+  lcd.setCursor(4,1);
+  if (digitalRead(11) == HIGH){ 
     lcd.print("ON");
-  }
-    else{
-    lcd.setCursor(4,1);
-    lcd.print("Off");
-    }
-    if (digitalRead(7) == HIGH){ 
-    lcd.setCursor(8,1);
-    lcd.print("ON");
-  }
-    else{
-    lcd.setCursor(8,1);
+  } else {
     lcd.print("Off");
   }
-    if (digitalRead(8) == HIGH){ 
-    lcd.setCursor(12,1);
+
+  lcd.setCursor(8,1);
+  if (digitalRead(7) == HIGH){ 
     lcd.print("ON");
+  } else {
+    lcd.print("Off");
   }
-    else{
-    lcd.setCursor(12,1);
+
+  lcd.setCursor(12,1);
+  if (digitalRead(8) == HIGH){ 
+    lcd.print("ON");
+  } else {
     lcd.print("Off");
   }
 }
 
-noDelay homeScreenTask(2000, homeScreenHandler);
+noDelay homeScreenTask(1000, homeScreenHandler);
 noDelay LEDTask(1000, LEDHandler);
 noDelay feederTask(1000, feederHandler);
 noDelay feederCcwTask(1000, feederCcwHandler);
@@ -384,12 +371,14 @@ noDelay waveMakerTask(1000, waveMakerHandler);
 
 void loop() {
   nav.poll();
-  LEDTask.update();
-  feederTask.update();
-  feederCcwTask.update();
-  filterTask.update();
-  waveMakerTask.update();
+  
   if (nav.sleepTask) {
+    getTime();
     homeScreenTask.update();
+    LEDTask.update();
+    feederTask.update();
+    feederCcwTask.update();
+    filterTask.update();
+    waveMakerTask.update();
   }
 }
